@@ -13,7 +13,7 @@
 
 #define HAL(func)   (_interface->func)
 
-PN532::PN532(PN532Interface &interface)
+PN532::PN532(PN532Interface &interface) : mi_CmacBuffer(mu8_CmacBuffer_Data, sizeof(mu8_CmacBuffer_Data))
 {
     _interface = &interface;
     mu8_LastAuthKeyNo    = NOT_AUTHENTICATED;
