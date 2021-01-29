@@ -376,6 +376,8 @@ enum DESFireCmac
 #define FELICA_WRITE_MAX_BLOCK_NUM          10 // for typical FeliCa card
 #define FELICA_REQ_SERVICE_MAX_NODE_NUM     32
 
+#define PN532_PACKBUFFSIZE                  64
+
 void     GenerateRandom(byte* u8_Random, int s32_Length);
 uint16_t CalcCrc16(const byte* u8_Data,  int s32_Length);
 uint32_t CalcCrc32(const byte* u8_Data1, int s32_Length1, const byte* u8_Data2=NULL, int s32_Length2=0);
