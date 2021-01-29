@@ -21,7 +21,7 @@ PN532::PN532(PN532Interface &interface) : mi_CmacBuffer(mu8_CmacBuffer_Data, siz
     mu32_LastApplication = 0x000000; // No application selected
 
     // The PICC master key on an empty card is a simple DES key filled with 8 zeros
-    const byte ZERO_KEY[24] = {0};
+    const uint8_t ZERO_KEY[24] = {0};
 }
 
 /**************************************************************************/
@@ -418,12 +418,12 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
     pn532_packetbuffer[2] = cardbaudrate;
 
     if (HAL(writeCommand)(pn532_packetbuffer, 3)) {
-        return 0x0;  // command failed
+        return false;  // command failed
     }
 
     // read data packet
     if (HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), timeout) < 0) {
-        return 0x0;
+        return false;
     }
 
     // check some basic stuff
@@ -433,14 +433,18 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
       -------------   ------------------------------------------
       b0              Tags Found
       b1              Tag Number (only one used in this example)
-      b2..3           SENS_RES
-      b4              SEL_RES
+      b2..3           SENS_RES (ATQA = Answer to Request Type A)
+      b4              SEL_RES (SAK  = Select Acknowledge)
       b5              NFCID Length
       b6..NFCIDLen    NFCID
+      nn              ATS Length     (Desfire only)
+      nn..Length-1    ATS data bytes (Desfire only)
     */
 
-    if (pn532_packetbuffer[0] != 1)
-        return 0;
+    // if no tags were found
+    if (pn532_packetbuffer[0] != 1) {
+        return false;
+    }
 
     uint16_t sens_res = pn532_packetbuffer[2];
     sens_res <<= 8;
@@ -1530,11 +1534,10 @@ bool PN532::GetRealCardID(byte u8_UID[7])
     byte u8_Status = ST_Success;
     uint32_t u32_Crc2 = CalcCrc32(u8_UID, 7, &u8_Status, 1);
 
-    if (mu8_DebugLevel > 1)
-    {
+#ifdef DEBUG
         //Utils::Print("* CRC:       0x");
         //Utils::PrintHex32(u32_Crc2, LF);
-    }
+#endif
 
     if (u32_Crc1 != u32_Crc2)
     {
@@ -1542,11 +1545,10 @@ bool PN532::GetRealCardID(byte u8_UID[7])
         return false;
     }
 
-    if (mu8_DebugLevel > 0)
-    {
+#ifdef DEBUG
         //Utils::Print("Real UID: ");
         //Utils::PrintHexBuf(u8_UID, 7, LF);
-    }
+#endif
     return true;
 }
 
@@ -1607,7 +1609,7 @@ int PN532::DataExchange(TxBuffer* pi_Command,               // in (command + par
     int s32_Overhead = 11; // Overhead added to payload = 11 bytes = 7 bytes for PN532 frame + 3 bytes for INDATAEXCHANGE response + 1 card status byte
     if (e_Mac & MAC_Rmac) s32_Overhead += 8; // + 8 bytes for CMAC
 
-    // mu8_PacketBuffer is used for input and output
+    // pn532_packetbuffer is used for input and output
     if (2 + pi_Command->GetCount() + pi_Params->GetCount() > PN532_PACKBUFFSIZE || s32_Overhead + s32_RecvSize > PN532_PACKBUFFSIZE)
     {
         //Utils::Print("DataExchange(): Invalid parameters\r\n");
@@ -1626,35 +1628,45 @@ int PN532::DataExchange(TxBuffer* pi_Command,               // in (command + par
     byte u8_Command = pi_Command->GetData()[0];
 
     int P=0;
-    mu8_PacketBuffer[P++] = PN532_COMMAND_INDATAEXCHANGE;
-    mu8_PacketBuffer[P++] = 1; // Card number (Logical target number)
+    pn532_packetbuffer[P++] = PN532_COMMAND_INDATAEXCHANGE;
+    pn532_packetbuffer[P++] = 1; // Card number (Logical target number)
 
-    memcpy(mu8_PacketBuffer + P, pi_Command->GetData(), pi_Command->GetCount());
+    memcpy(pn532_packetbuffer + P, pi_Command->GetData(), pi_Command->GetCount());
     P += pi_Command->GetCount();
 
-    memcpy(mu8_PacketBuffer + P, pi_Params->GetData(),  pi_Params->GetCount());
+    memcpy(pn532_packetbuffer + P, pi_Params->GetData(),  pi_Params->GetCount());
     P += pi_Params->GetCount();
 
-    if (!SendCommandCheckAck(mu8_PacketBuffer, P))
-        return -1;
+    // ORIGINALLY:
+    // if (!SendCommandCheckAck(pn532_packetbuffer, P))
+    //    return -1;
 
-    byte s32_Len = ReadData(mu8_PacketBuffer, s32_RecvSize + s32_Overhead);
+    // MODIFIED:
+    if (HAL(writeCommand)(pn532_packetbuffer, P)) {
+        return -1;
+    }
+
+    // read data packet
+    int16_t status = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer));
+    if (0 > status) {
+        return 0;
+    }
 
     // ReadData() returns 3 byte if status error from the PN532
     // ReadData() returns 4 byte if status error from the Desfire card
-    if (s32_Len < 3 || mu8_PacketBuffer[1] != PN532_COMMAND_INDATAEXCHANGE + 1)
+    if (status < 3 || pn532_packetbuffer[1] != PN532_COMMAND_INDATAEXCHANGE + 1)
     {
         //Utils::Print("DataExchange() failed\r\n");
         return -1;
     }
 
     // Here we get two status bytes that must be checked
-    byte u8_PN532Status = mu8_PacketBuffer[2]; // contains errors from the PN532
-    byte u8_CardStatus  = mu8_PacketBuffer[3]; // contains errors from the Desfire card
+    uint8_t u8_PN532Status = pn532_packetbuffer[2]; // contains errors from the PN532
+    uint8_t u8_CardStatus  = pn532_packetbuffer[3]; // contains errors from the Desfire card
 
     mu8_LastPN532Error = u8_PN532Status;
 
-    if (u8_PN532Status != 0 || s32_Len < 4) // 0x0 is ST_Success
+    if (u8_PN532Status != ST_Success || status < 4)
         return -1;
 
     // After any error that the card has returned the authentication is invalidated.
@@ -1669,7 +1681,7 @@ int PN532::DataExchange(TxBuffer* pi_Command,               // in (command + par
     if (pe_Status)
         *pe_Status = (DESFireStatus)u8_CardStatus;
 
-    s32_Len -= 4; // 3 bytes for INDATAEXCHANGE response + 1 byte card status
+    status -= 4; // 3 bytes for INDATAEXCHANGE response + 1 byte card status
 
     // A CMAC may be appended to the end of the frame.
     // The CMAC calculation is important because it maintains the IV of the session key up to date.
@@ -1690,40 +1702,40 @@ int PN532::DataExchange(TxBuffer* pi_Command,               // in (command + par
         // This is an intermediate frame. More frames will follow. There is no CMAC in the response yet.
         if (u8_CardStatus == ST_MoreFrames)
         {
-            if (!mi_CmacBuffer.AppendBuf(mu8_PacketBuffer + 4, s32_Len))
+            if (!mi_CmacBuffer.AppendBuf(pn532_packetbuffer + 4, status))
                 return -1;
         }
 
-        if ((s32_Len >= 8) &&             // If the response is shorter than 8 bytes it surely does not contain a CMAC
+        if ((status >= 8) &&             // If the response is shorter than 8 bytes it surely does not contain a CMAC
             (u8_CardStatus == ST_Success)) // Response contains CMAC only in case of success
         {
-            s32_Len -= 8; // Do not return the received CMAC to the caller and do not include it into the CMAC calculation
+            status -= 8; // Do not return the received CMAC to the caller and do not include it into the CMAC calculation
 
-            byte* u8_RxMac = mu8_PacketBuffer + 4 + s32_Len;
+            byte* u8_RxMac = pn532_packetbuffer + 4 + status;
 
         }
     }
 
-    if (s32_Len > s32_RecvSize)
+    if (status > s32_RecvSize)
     {
         //Utils::Print("DataExchange() Buffer overflow\r\n");
         return -1;
     }
 
-    if (u8_RecvBuf && s32_Len)
+    if (u8_RecvBuf && status)
     {
-        memcpy(u8_RecvBuf, mu8_PacketBuffer + 4, s32_Len);
+        memcpy(u8_RecvBuf, pn532_packetbuffer + 4, status);
 
         if (e_Mac & MAC_Rcrypt) // decrypt received data with session key
         {
 
 #ifdef DEBUG
                 //Utils::Print("Decrypt:  ");
-                //Utils::PrintHexBuf(u8_RecvBuf, s32_Len, LF);
+                //Utils::PrintHexBuf(u8_RecvBuf, status, LF);
 #endif
         }
     }
-    return s32_Len;
+    return status;
 }
 
 // Checks the status byte that is returned from the card
@@ -1764,7 +1776,7 @@ uint16_t CalcCrc16(const byte* u8_Data, int s32_Length)
     uint16_t u16_Crc = 0x6363;
     for (int i=0; i<s32_Length; i++)
     {
-        byte ch = u8_Data[i];
+        uint8_t ch = u8_Data[i];
         ch = ch ^ (byte)u16_Crc;
         ch = ch ^ (ch << 4);
         u16_Crc = (u16_Crc >> 8) ^ ((uint16_t)ch << 8) ^ ((uint16_t)ch << 3) ^ ((uint16_t)ch >> 4);
