@@ -446,19 +446,45 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
         return false;
     }
 
-    *uidLength = pn532_packetbuffer[5];
-    memcpy(uid, uid+6, uidLength)
+    int uidLen = pn532_packetbuffer[5];
+    *uidLength = uidLen;
+    memcpy(uid, uid+6, uidLen);
 
     // ATQA and SAK codes can be found here: https://www.nxp.com/docs/en/application-note/AN10833.pdf
-    uint16_t ATQA = ((uint16_t)mu8_PacketBuffer[2] << 8) | mu8_PacketBuffer[3];
-    byte     SAK   = mu8_PacketBuffer[4];
+    uint16_t ATQA = ((uint16_t)pn532_packetbuffer[2] << 8) | pn532_packetbuffer[3];
+    byte     SAK   = pn532_packetbuffer[4];
 
     DMSG("ATQA: 0x");  DMSG_HEX(ATQA);
     DMSG("SAK: 0x");  DMSG_HEX(SAK);
     DMSG("\n");
 
-    if (uidLength == 7 && uid[0] != 0x80 && ATQA == 0x0344 && SAK == 0x20) true; // TODO: *pe_CardType = CARD_Desfire;
-    if (uidLength == 4 && uid[0] == 0x80 && ATQA == 0x0304 && SAK == 0x20) true; // TODO: *pe_CardType = CARD_DesRandom;
+#ifdef DEBUG
+    Serial.println(uidLen);
+    Serial.println(uid[0]);
+    Serial.println(ATQA);
+    Serial.println(SAK);
+
+    if (uidLen == 7 && uid[0] != 0x80 && ATQA == 0x68 && SAK == 0x0) {
+        Serial.println("Ultralight");
+    }
+
+    if (uidLen == 4 && uid[0] != 0x80 && ATQA == 0x4 && SAK == 0x8) {
+        Serial.println("Classic 1K");
+    }
+
+    if (uidLen == 4 && uid[0] != 0x80 && ATQA == 0x2 && SAK == 0x18) {
+        Serial.println("Classic 4K");
+    }
+
+    if (uidLen == 7 && uid[0] != 0x80 && ATQA == 0x0344 && SAK == 0x20) {
+        Serial.println("DESFire");
+    }
+
+    if (uidLen == 4 && uid[0] == 0x80 && ATQA == 0x0304 && SAK == 0x20) {
+        Serial.println("DESFIRE RANDOM");
+    }
+    delay(2000);
+#endif
 
     if (inlist) {
         inListedTag = pn532_packetbuffer[1];
