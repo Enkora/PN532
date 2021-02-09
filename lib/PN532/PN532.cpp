@@ -9,6 +9,7 @@
 #include "Arduino.h"
 #include "PN532.h"
 #include "PN532_debug.h"
+#include "Secrets.h"
 #include <string.h>
 
 #define HAL(func)   (_interface->func)
@@ -16,12 +17,16 @@
 PN532::PN532(PN532Interface &interface) : mi_CmacBuffer(mu8_CmacBuffer_Data, sizeof(mu8_CmacBuffer_Data))
 {
     _interface = &interface;
+    mpi_SessionKey       = NULL;
     mu8_LastAuthKeyNo    = NOT_AUTHENTICATED;
     mu8_LastPN532Error   = 0;
     mu32_LastApplication = 0x000000; // No application selected
 
     // The PICC master key on an empty card is a simple DES key filled with 8 zeros
     const uint8_t ZERO_KEY[24] = {0};
+    DES2_DEFAULT_KEY.SetKeyData(ZERO_KEY,  16, 0); // simple DES
+    DES3_DEFAULT_KEY.SetKeyData(ZERO_KEY, 24, 0); // triple DES
+    AES_DEFAULT_KEY.SetKeyData(ZERO_KEY, 16, 0);
 }
 
 /**************************************************************************/
@@ -422,7 +427,7 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
     }
 
     // read data packet
-    if (HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), timeout) < 0) {
+    if (0 > HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), timeout)) {
         return false;
     }
 
@@ -448,7 +453,10 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
 
     int uidLen = pn532_packetbuffer[5];
     *uidLength = uidLen;
-    memcpy(uid, uid+6, uidLen);
+
+    for (uint8_t i = 0; i < uidLen; i++) {
+        uid[i] = pn532_packetbuffer[6 + i];
+    }
 
     // ATQA and SAK codes can be found here: https://www.nxp.com/docs/en/application-note/AN10833.pdf
     uint16_t ATQA = ((uint16_t)pn532_packetbuffer[2] << 8) | pn532_packetbuffer[3];
@@ -1557,7 +1565,7 @@ bool PN532::GetRealCardID(byte u8_UID[7])
 
     // The CRC must be calculated over the UID + the status byte appended
     byte u8_Status = ST_Success;
-    uint32_t u32_Crc2 = CalcCrc32(u8_UID, 7, &u8_Status, 1);
+    uint32_t u32_Crc2 = Utils::CalcCrc32(u8_UID, 7, &u8_Status, 1);
 
 #ifdef DEBUG
         //Utils::Print("* CRC:       0x");
@@ -1645,7 +1653,7 @@ int PN532::DataExchange(TxBuffer* pi_Command,               // in (command + par
     {
         if (mu8_LastAuthKeyNo == NOT_AUTHENTICATED)
         {
-            //Utils::Print("Not authenticated\r\n");
+            Utils::Print("Not authenticated\r\n");
             return -1;
         }
     }
@@ -1743,7 +1751,7 @@ int PN532::DataExchange(TxBuffer* pi_Command,               // in (command + par
 
     if (status > s32_RecvSize)
     {
-        //Utils::Print("DataExchange() Buffer overflow\r\n");
+        Utils::Print("DataExchange() Buffer overflow\r\n");
         return -1;
     }
 

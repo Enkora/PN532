@@ -12,11 +12,13 @@
 #include <stdint.h>
 #include "PN532Interface.h"
 #include "Buffer.h"
+#include "PN532.h"
+#include "DES.h"
+#include "AES128.h"
 
 // DESFIRE CONTENT STARTS HERE
 
 //#include "DesFireKey.h"
-
 // Just an invalid key number
 #define NOT_AUTHENTICATED      255
 
@@ -114,26 +116,26 @@ enum DESFireStatus
 // Card information about software and hardware version.
 struct DESFireCardVersion
 {
-    uint8_t hardwareVendorId;    // The hardware vendor
-    uint8_t hardwareType;        // The hardware type
-    uint8_t hardwareSubType;     // The hardware subtype
-    uint8_t hardwareMajVersion;  // The hardware major version
-    uint8_t hardwareMinVersion;  // The hardware minor version
-    uint8_t hardwareStorageSize; // The hardware storage size
-    uint8_t hardwareProtocol;    // The hardware protocol
+    byte hardwareVendorId;    // The hardware vendor
+    byte hardwareType;        // The hardware type
+    byte hardwareSubType;     // The hardware subtype
+    byte hardwareMajVersion;  // The hardware major version
+    byte hardwareMinVersion;  // The hardware minor version
+    byte hardwareStorageSize; // The hardware storage size
+    byte hardwareProtocol;    // The hardware protocol
 
-    uint8_t softwareVendorId;    // The software vendor
-    uint8_t softwareType;        // The software type
-    uint8_t softwareSubType;     // The software subtype
-    uint8_t softwareMajVersion;  // The software major version
-    uint8_t softwareMinVersion;  // The software minor version
-    uint8_t softwareStorageSize; // The software storage size
-    uint8_t softwareProtocol;    // The software protocol
+    byte softwareVendorId;    // The software vendor
+    byte softwareType;        // The software type
+    byte softwareSubType;     // The software subtype
+    byte softwareMajVersion;  // The software major version
+    byte softwareMinVersion;  // The software minor version
+    byte softwareStorageSize; // The software storage size
+    byte softwareProtocol;    // The software protocol
 
-    uint8_t uid[7];              // The serial card number
-    uint8_t batchNo[5];          // The batch number
-    uint8_t cwProd;              // The production week (BCD)
-    uint8_t yearProd;            // The production year (BCD)
+    byte uid[7];              // The serial card number
+    byte batchNo[5];          // The batch number
+    byte cwProd;              // The production week (BCD)
+    byte yearProd;            // The production year (BCD)
 };
 
 // MK = Application Master Key or PICC Master Key
@@ -369,6 +371,12 @@ enum DESFireCmac
 #define PN532_GPIO_P34                      (4)
 #define PN532_GPIO_P35                      (5)
 
+#define CARD_TYPE_106KB_ISO14443A           (0x00) // card baudrate 106 kB
+#define CARD_TYPE_212KB_FELICA              (0x01) // card baudrate 212 kB
+#define CARD_TYPE_424KB_FELICA              (0x02) // card baudrate 424 kB
+#define CARD_TYPE_106KB_ISO14443B           (0x03) // card baudrate 106 kB
+#define CARD_TYPE_106KB_JEWEL               (0x04) // card baudrate 106 kB
+
 // FeliCa consts
 #define FELICA_READ_MAX_SERVICE_NUM         16
 #define FELICA_READ_MAX_BLOCK_NUM           12 // for typical FeliCa card
@@ -376,13 +384,14 @@ enum DESFireCmac
 #define FELICA_WRITE_MAX_BLOCK_NUM          10 // for typical FeliCa card
 #define FELICA_REQ_SERVICE_MAX_NODE_NUM     32
 
-#define PN532_PACKBUFFSIZE                  64
+#define PN532_PACKBUFFSIZE                  80
 
-void     GenerateRandom(byte* u8_Random, int s32_Length);
-uint16_t CalcCrc16(const byte* u8_Data,  int s32_Length);
-uint32_t CalcCrc32(const byte* u8_Data1, int s32_Length1, const byte* u8_Data2=NULL, int s32_Length2=0);
-uint32_t CalcCrc32(const byte* u8_Data, int s32_Length, uint32_t u32_Crc);
-uint64_t GetMillis64();
+enum eCardType
+{
+    CARD_Unknown   = 0, // Mifare Classic or other card
+    CARD_Desfire   = 1, // A Desfire card with normal 7 byte UID  (bit 0)
+    CARD_DesRandom = 3, // A Desfire card with 4 byte random UID  (bit 0 + 1)
+};
 
 class PN532
 {
@@ -422,6 +431,7 @@ public:
     // ISO14443A functions
     bool inListPassiveTarget();
     bool readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uidLength, uint16_t timeout = 1000, bool inlist = false);
+    bool ReadPassiveTargetID(byte* uidBuffer, byte* uidLength, eCardType* pe_CardType);
     bool inDataExchange(uint8_t *send, uint8_t sendLength, uint8_t *response, uint8_t *responseLength);
 
     // DesFire functions
@@ -430,9 +440,31 @@ public:
     bool EnableRandomIDForever();
     bool GetRealCardID(uint8_t u8_UID[7]);
     bool GetFreeMemory(uint32_t* pu32_Memory);
-    uint8_t GetLastPN532Error(); // See comment for this function in CPP file
-    int  DataExchange(uint8_t      u8_Command, TxBuffer* pi_Params, uint8_t* u8_RecvBuf, int s32_RecvSize, DESFireStatus* pe_Status, DESFireCmac e_Mac);
-    int  DataExchange(TxBuffer* pi_Command, TxBuffer* pi_Params, uint8_t* u8_RecvBuf, int s32_RecvSize, DESFireStatus* pe_Status, DESFireCmac e_Mac);
+    // ---------------------
+    bool Authenticate (byte u8_KeyNo, DESFireKey* pi_Key);
+    bool ChangeKey    (byte u8_KeyNo, DESFireKey* pi_NewKey, DESFireKey* pi_CurKey);
+    bool GetKeyVersion(byte u8_KeyNo, byte* pu8_Version);
+    bool GetKeySettings   (DESFireKeySettings* pe_Settg, byte* pu8_KeyCount, DESFireKeyType* pe_KeyType);
+    bool ChangeKeySettings(DESFireKeySettings e_NewSettg);
+    // ---------------------
+    bool GetApplicationIDs(uint32_t u32_IDlist[28], byte* pu8_AppCount);
+    bool CreateApplication(uint32_t u32_AppID, DESFireKeySettings e_Settg, byte u8_KeyCount, DESFireKeyType e_KeyType);
+    bool SelectApplication(uint32_t u32_AppID);
+    bool DeleteApplication(uint32_t u32_AppID);
+    bool DeleteApplicationIfExists(uint32_t u32_AppID);
+    // ---------------------
+    bool GetFileIDs       (byte* u8_FileIDs, byte* pu8_FileCount);
+    bool GetFileSettings  (byte u8_FileID, DESFireFileSettings* pk_Settings);
+    bool DeleteFile       (byte u8_FileID);
+    bool CreateStdDataFile(byte u8_FileID, DESFireFilePermissions* pk_Permis, int s32_FileSize);
+    bool ReadFileData     (byte u8_FileID, int s32_Offset, int s32_Length, byte* u8_DataBuffer);
+    bool WriteFileData    (byte u8_FileID, int s32_Offset, int s32_Length, const byte* u8_DataBuffer);
+    bool ReadFileValue    (byte u8_FileID, uint32_t* pu32_Value);
+    // ---------------------
+    bool SwitchOffRfField();  // overrides PN532::SwitchOffRfField()
+    bool SAFE_TEST();
+    bool Selftest();
+    byte GetLastPN532Error(); // See comment for this function in CPP file
 
     // Mifare Classic functions
     bool mifareclassic_IsFirstBlock (uint32_t uiBlock);
@@ -466,16 +498,25 @@ public:
         return pn532_packetbuffer;
     };
 
+    DES  DES2_DEFAULT_KEY; // 2K3DES key with  8 zeroes {00,00,00,00,00,00,00,00}
+    DES  DES3_DEFAULT_KEY; // 3K3DES key with 24 zeroes
+    AES   AES_DEFAULT_KEY; // AES    key with 16 zeroes
+
 private:
+    int  DataExchange(uint8_t      u8_Command, TxBuffer* pi_Params, uint8_t* u8_RecvBuf, int s32_RecvSize, DESFireStatus* pe_Status, DESFireCmac e_Mac);
+    int  DataExchange(TxBuffer* pi_Command, TxBuffer* pi_Params, uint8_t* u8_RecvBuf, int s32_RecvSize, DESFireStatus* pe_Status, DESFireCmac e_Mac);
     bool CheckCardStatus(DESFireStatus e_Status);
+    bool SelftestKeyChange(uint32_t u32_Application, DESFireKey* pi_DefaultKey, DESFireKey* pi_NewKeyA, DESFireKey* pi_NewKeyB);
 
-    uint8_t          mu8_LastAuthKeyNo; // The last key which did a successful authetication (0xFF if not yet authenticated)
+    uint8_t       mu8_LastAuthKeyNo; // The last key which did a successful authetication (0xFF if not yet authenticated)
     uint32_t      mu32_LastApplication;
-    //DESFireKey*   mpi_SessionKey;
-    uint8_t          mu8_LastPN532Error;
+    uint8_t       mu8_LastPN532Error;
+    DESFireKey*   mpi_SessionKey;
+    AES           mi_AesSessionKey;
+    DES           mi_DesSessionKey;
 
-    // Must have enough space to hold the entire response from DF_INS_GET_APPLICATION_IDS (84 uint8_t) + CMAC padding
-    uint8_t          mu8_CmacBuffer_Data[120];
+    // Must have enough space to hold the entire response from DF_INS_GET_APPLICATION_IDS (84 byte) + CMAC padding
+    uint8_t       mu8_CmacBuffer_Data[120];
     TxBuffer      mi_CmacBuffer;
 
 
@@ -486,6 +527,7 @@ private:
     uint8_t _felicaIDm[8]; // FeliCa IDm (NFCID2)
     uint8_t _felicaPMm[8]; // FeliCa PMm (PAD)
 
+    byte mu8_DebugLevel = 1;   // 0, 1, or 2
     uint8_t pn532_packetbuffer[PN532_PACKBUFFSIZE];
 
     PN532Interface *_interface;

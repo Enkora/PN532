@@ -40,7 +40,7 @@ int8_t PN532_I2C::writeCommand(const uint8_t *header, uint8_t hlen, const uint8_
     write(PN532_HOSTTOPN532);
     uint8_t sum = PN532_HOSTTOPN532; // sum of TFI + DATA
 
-    DMSG("write: ");
+    //DMSG("write: ");
 
     for (uint8_t i = 0; i < hlen; i++)
     {
@@ -48,7 +48,7 @@ int8_t PN532_I2C::writeCommand(const uint8_t *header, uint8_t hlen, const uint8_
         {
             sum += header[i];
 
-            DMSG_HEX(header[i]);
+            //DMSG_HEX(header[i]);
         }
         else
         {
@@ -182,8 +182,8 @@ int16_t PN532_I2C::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
         return PN532_NO_SPACE; // not enough space
     }
 
-    DMSG("read:  ");
-    DMSG_HEX(cmd);
+    //DMSG("read:  ");
+    //DMSG_HEX(cmd);
 
     uint8_t sum = PN532_PN532TOHOST + cmd;
     for (uint8_t i = 0; i < length; i++)
@@ -191,9 +191,9 @@ int16_t PN532_I2C::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
         buf[i] = read();
         sum += buf[i];
 
-        DMSG_HEX(buf[i]);
+        //DMSG_HEX(buf[i]);
     }
-    DMSG('\n');
+    //DMSG('\n');
 
     uint8_t checksum = read();
     if (0 != (uint8_t)(sum + checksum))
@@ -211,9 +211,9 @@ int8_t PN532_I2C::readAckFrame()
     const uint8_t PN532_ACK[] = {0, 0, 0xFF, 0, 0xFF, 0};
     uint8_t ackBuf[sizeof(PN532_ACK)];
 
-    DMSG("wait for ack at : ");
-    DMSG(millis());
-    DMSG('\n');
+    //DMSG("wait for ack at : ");
+    //DMSG(millis());
+    //DMSG('\n');
 
     uint16_t time = 0;
     do
@@ -235,9 +235,9 @@ int8_t PN532_I2C::readAckFrame()
         }
     } while (1);
 
-    DMSG("ready at : ");
-    DMSG(millis());
-    DMSG('\n');
+    //DMSG("ready at : ");
+    //DMSG(millis());
+    //DMSG('\n');
 
     for (uint8_t i = 0; i < sizeof(PN532_ACK); i++)
     {
