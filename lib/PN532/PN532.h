@@ -519,7 +519,6 @@ private:
     uint8_t       mu8_CmacBuffer_Data[120];
     TxBuffer      mi_CmacBuffer;
 
-
     uint8_t _uid[7];  // ISO14443A uid
     uint8_t _uidLen;  // uid len
     uint8_t _key[6];  // Mifare Classic key
