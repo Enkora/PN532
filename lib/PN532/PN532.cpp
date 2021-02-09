@@ -1748,7 +1748,7 @@ int PN532::DataExchange(TxBuffer* pi_Command,               // in (command + par
     // pn532_packetbuffer is used for input and output
     if (2 + pi_Command->GetCount() + pi_Params->GetCount() > PN532_PACKBUFFSIZE || s32_Overhead + s32_RecvSize > PN532_PACKBUFFSIZE)
     {
-        //Utils::Print("DataExchange(): Invalid parameters\r\n");
+        Utils::Print("DataExchange(): Invalid parameters\r\n");
         return -1;
     }
 
@@ -1877,11 +1877,6 @@ int PN532::DataExchange(TxBuffer* pi_Command,               // in (command + par
 // Checks the status byte that is returned from the card
 bool PN532::CheckCardStatus(DESFireStatus e_Status)
 {
-/*
-    char s8_Buf[24];
-    sprintf(s8_Buf, "Desfire status 0x%02X: ", e_Status);
-    Serial.println(s8_Buf);
-  */
     switch (e_Status)
     {
         case ST_Success:    // Success
@@ -1889,7 +1884,73 @@ bool PN532::CheckCardStatus(DESFireStatus e_Status)
         case ST_MoreFrames: // Another frame will follow
             return true;
 
-        default: return false; // This is just to avoid stupid gcc compiler warnings
+        default: break; // This is just to avoid stupid gcc compiler warnings
+    }
+
+    Utils::Print("Desfire Error: ");
+    switch (e_Status)
+    {
+        case ST_OutOfMemory:
+            Utils::Print("Not enough EEPROM memory.\r\n");
+            return false;
+        case ST_IllegalCommand:
+            Utils::Print("Illegal command.\r\n");
+            return false;
+        case ST_IntegrityError:
+            Utils::Print("Integrity error.\r\n");
+            return false;
+        case ST_KeyDoesNotExist:
+            Utils::Print("Key does not exist.\r\n");
+            return false;
+        case ST_WrongCommandLen:
+            Utils::Print("Wrong command length.\r\n");
+            return false;
+        case ST_PermissionDenied:
+            Utils::Print("Permission denied.\r\n");
+            return false;
+        case ST_IncorrectParam:
+            Utils::Print("Incorrect parameter.\r\n");
+            return false;
+        case ST_AppNotFound:
+            Utils::Print("Application not found.\r\n");
+            return false;
+        case ST_AppIntegrityError:
+            Utils::Print("Application integrity error.\r\n");
+            return false;
+        case ST_AuthentError:
+            Utils::Print("Authentication error.\r\n");
+            return false;
+        case ST_LimitExceeded:
+            Utils::Print("Limit exceeded.\r\n");
+            return false;
+        case ST_CardIntegrityError:
+            Utils::Print("Card integrity error.\r\n");
+            return false;
+        case ST_CommandAborted:
+            Utils::Print("Command aborted.\r\n");
+            return false;
+        case ST_CardDisabled:
+            Utils::Print("Card disabled.\r\n");
+            return false;
+        case ST_InvalidApp:
+            Utils::Print("Invalid application.\r\n");
+            return false;
+        case ST_DuplicateAidFiles:
+            Utils::Print("Duplicate AIDs or files.\r\n");
+            return false;
+        case ST_EepromError:
+            Utils::Print("EEPROM error.\r\n");
+            return false;
+        case ST_FileNotFound:
+            Utils::Print("File not found.\r\n");
+            return false;
+        case ST_FileIntegrityError:
+            Utils::Print("File integrity error.\r\n");
+            return false;
+        default:
+            Utils::Print("0x");
+            Utils::PrintHex8((byte)e_Status, LF);
+            return false;
     }
 }
 
