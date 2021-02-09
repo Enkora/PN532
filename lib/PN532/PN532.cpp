@@ -501,6 +501,109 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
     return 1;
 }
 
+/**************************************************************************
+    Waits for an ISO14443A target to enter the field.
+    If the RF field has been turned off before, this command switches it on.
+
+    param u8_UidBuffer  Pointer to an 8 byte buffer that will be populated with the card's UID (4 or 7 bytes)
+    param pu8_UidLength Pointer to the variable that will hold the length of the card's UID.
+    param pe_CardType   Pointer to the variable that will hold if the card is a Desfire card
+
+    returns false only on error!
+    returns true and *UidLength = 0 if no card was found
+    returns true and *UidLength > 0 if a card has been read successfully
+**************************************************************************/
+bool PN532::ReadPassiveTargetID(byte* u8_UidBuffer, byte* pu8_UidLength, eCardType* pe_CardType)
+{
+    if (mu8_DebugLevel > 0) Utils::Print("\r\n*** ReadPassiveTargetID()\r\n");
+
+    *pu8_UidLength = 0;
+    *pe_CardType   = CARD_Unknown;
+    memset(u8_UidBuffer, 0, 8);
+
+    pn532_packetbuffer[0] = PN532_COMMAND_INLISTPASSIVETARGET;
+    pn532_packetbuffer[1] = 1;  // read data of 1 card (The PN532 can read max 2 targets at the same time)
+    pn532_packetbuffer[2] = CARD_TYPE_106KB_ISO14443A; // This function currently does not support other card types.
+
+    if (HAL(writeCommand)(pn532_packetbuffer, 3)) {
+        return false; // Error (no valid ACK received or timeout)
+    }
+
+
+    /*
+    ISO14443A card response:
+    pn532_packetbuffer Description
+    -------------------------------------------------------
+    b0               D5 (always) (PN532_PN532TOHOST)
+    b1               4B (always) (PN532_COMMAND_INLISTPASSIVETARGET + 1)
+    b2               Amount of cards found
+    b3               Tag number (always 1)
+    b4,5             SENS_RES (ATQA = Answer to Request Type A)
+    b6               SEL_RES  (SAK  = Select Acknowledge)
+    b7               UID Length
+    b8..Length       UID (4 or 7 bytes)
+    nn               ATS Length     (Desfire only)
+    nn..Length-1     ATS data bytes (Desfire only)
+    */
+
+    if (0 > HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer)))
+    {
+        Utils::Print("ReadPassiveTargetID failed\r\n");
+        return false;
+    }
+
+    byte cardsFound = pn532_packetbuffer[2];
+    if (mu8_DebugLevel > 0)
+    {
+        Utils::Print("Cards found: ");
+        Utils::PrintDec(cardsFound, LF);
+    }
+    if (cardsFound != 1)
+        return true; // no card found -> this is not an error!
+
+    byte u8_IdLength = pn532_packetbuffer[7];
+    if (u8_IdLength != 4 && u8_IdLength != 7)
+    {
+        Utils::Print("Card has unsupported UID length: ");
+        Utils::PrintDec(u8_IdLength, LF);
+        return true; // unsupported card found -> this is not an error!
+    }
+
+    memcpy(u8_UidBuffer, pn532_packetbuffer + 8, u8_IdLength);
+    *pu8_UidLength = u8_IdLength;
+
+    // See "Mifare Identification & Card Types.pdf" in the ZIP file
+    uint16_t u16_ATQA = ((uint16_t)pn532_packetbuffer[4] << 8) | pn532_packetbuffer[5];
+    byte     u8_SAK   = pn532_packetbuffer[6];
+
+    if (u8_IdLength == 7 && u8_UidBuffer[0] != 0x80 && u16_ATQA == 0x0344 && u8_SAK == 0x20) *pe_CardType = CARD_Desfire;
+    if (u8_IdLength == 4 && u8_UidBuffer[0] == 0x80 && u16_ATQA == 0x0304 && u8_SAK == 0x20) *pe_CardType = CARD_DesRandom;
+
+    if (mu8_DebugLevel > 0)
+    {
+        Utils::Print("Card UID:    ");
+        Utils::PrintHexBuf(u8_UidBuffer, u8_IdLength, LF);
+
+        // Examples:              ATQA    SAK  UID length
+        // MIFARE Mini            00 04   09   4 bytes
+        // MIFARE Mini            00 44   09   7 bytes
+        // MIFARE Classic 1k      00 04   08   4 bytes
+        // MIFARE Classic 4k      00 02   18   4 bytes
+        // MIFARE Ultralight      00 44   00   7 bytes
+        // MIFARE DESFire Default 03 44   20   7 bytes
+        // MIFARE DESFire Random  03 04   20   4 bytes
+        // See "Mifare Identification & Card Types.pdf"
+        char s8_Buf[80];
+        sprintf(s8_Buf, "Card Type:   ATQA= 0x%04X, SAK= 0x%02X", u16_ATQA, u8_SAK);
+
+        if (*pe_CardType == CARD_Desfire)   strcat(s8_Buf, " (Desfire Default)");
+        if (*pe_CardType == CARD_DesRandom) strcat(s8_Buf, " (Desfire RandomID)");
+
+        Utils::Print(s8_Buf, LF);
+    }
+    return true;
+}
+
 
 /***** Mifare Classic Functions ******/
 
