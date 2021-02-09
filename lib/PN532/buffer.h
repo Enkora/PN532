@@ -13,7 +13,7 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
-#include <Arduino.h>
+#include "Utils.h"
 
 // These macros create a new buffer on the stack avoiding the use of the 'new' operator.
 // ATTENTION:
@@ -22,17 +22,17 @@
 //
 // TX_BUFFER(i_SessKey, 16)
 // Creates an instance i_SessKey with the size of 16 bytes and is equivalent to:
-// uint8_t i_SessKey_Buffer[16];
+// byte i_SessKey_Buffer[16];
 // TxBuffer i_SessKey(i_SessKey_Buffer, 16);
 //
-// The uint8_t buffer is created outside the class to avoid the need of a template class which would have several disadvantages.
+// The byte buffer is created outside the class to avoid the need of a template class which would have several disadvantages.
 // The operator "##" tells the preprocessor to concatenate two strings.
 #define TX_BUFFER(buffer_name, size) \
-    uint8_t buffer_name##_Buffer[size]; \
+    byte buffer_name##_Buffer[size]; \
     TxBuffer buffer_name(buffer_name##_Buffer, size);
 
 #define RX_BUFFER(buffer_name, size) \
-    uint8_t buffer_name##_Buffer[size]; \
+    byte buffer_name##_Buffer[size]; \
     RxBuffer buffer_name(buffer_name##_Buffer, size);
 
 
@@ -40,7 +40,7 @@
 class RxBuffer
 {
 public:
-    inline RxBuffer(uint8_t* u8_Buffer, int s32_Size)
+    inline RxBuffer(byte* u8_Buffer, int s32_Size)
     {
         mu8_Buf   = u8_Buffer;
         ms32_Size = s32_Size;
@@ -64,17 +64,17 @@ public:
         return ms32_Size;
     }
 
-    inline uint8_t* GetData()
+    inline byte* GetData()
     {
         return mu8_Buf;
     }
 
-    inline operator uint8_t*()
+    inline operator byte*()
     {
         return mu8_Buf;
     }
 
-    // reads 1 uint8_t from the buffer and increments the pointer
+    // reads 1 byte from the buffer and increments the pointer
     uint8_t ReadUint8()
     {
         if (!CheckPos(1)) return 0;
@@ -117,7 +117,7 @@ public:
         return u32_Data;
     }
 
-    bool ReadBuf(uint8_t* u8_Buffer, int s32_Count)
+    bool ReadBuf(byte* u8_Buffer, int s32_Count)
     {
         if (!CheckPos(s32_Count)) return false;
 
@@ -136,7 +136,7 @@ private:
         return false;
     }
 
-    uint8_t* mu8_Buf;
+    byte* mu8_Buf;
     int   ms32_Size;
     int   ms32_Pos;
 };
@@ -147,7 +147,7 @@ private:
 class TxBuffer
 {
 public:
-    inline TxBuffer(uint8_t* u8_Buffer, int s32_Size)
+    inline TxBuffer(byte* u8_Buffer, int s32_Size)
     {
         mu8_Buf   = u8_Buffer;
         ms32_Size = s32_Size;
@@ -155,7 +155,7 @@ public:
         memset(mu8_Buf, 0, s32_Size);
     }
 
-    // Resets the uint8_t counter
+    // Resets the byte counter
     inline void Clear()
     {
         ms32_Pos = 0;
@@ -189,17 +189,17 @@ public:
         return true;
     }
 
-    inline uint8_t* GetData()
+    inline byte* GetData()
     {
         return mu8_Buf;
     }
 
-    inline operator uint8_t*()
+    inline operator byte*()
     {
         return mu8_Buf;
     }
 
-    // writes 1 uint8_t to the buffer and increments the pointer
+    // writes 1 byte to the buffer and increments the pointer
     bool AppendUint8(uint8_t u8_Data)
     {
         if (!CheckPos(1)) return false;
@@ -263,7 +263,7 @@ private:
         return false;
     }
 
-    uint8_t* mu8_Buf;
+    byte* mu8_Buf;
     int   ms32_Size;
     int   ms32_Pos;
 };
