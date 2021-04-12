@@ -203,20 +203,12 @@ int16_t PN532_I2C::readResponse(uint8_t command, uint8_t buf[], uint8_t len, uin
     }
 
     uint8_t cmd = command + 1; // response command
-    uint8_t read_1 = read();
-    uint8_t read_2 = read();
-    if (PN532_PN532TOHOST != read_1 || (cmd) != read_2)
+    if (PN532_PN532TOHOST != read() || (cmd) != read())
     {
-        Serial.println("3 PN532_INVALID_FRAME");
-        if (PN532_PN532TOHOST != read_1)    Serial.println(String("PN532_PN532TOHOST [") + String(PN532_PN532TOHOST, HEX) + "] != read_1 [" + String(read_1, HEX) + "]");
-        if ((cmd) != read_2)                Serial.println(String("(cmd) [") + String((cmd), HEX) + "] != read_2 [" + String(read_2, HEX) + "]");
         return PN532_INVALID_FRAME;
     }
-    buf[0] = PN532_PN532TOHOST;
-    buf[1] = (cmd);
 
-    Serial.println(String("length: ") + String(length) + ", len: " + String(len));
-
+    length -= 2;
     if (length > len)
     {
         DMSG("PN532_NO_SPACE");
@@ -227,7 +219,7 @@ int16_t PN532_I2C::readResponse(uint8_t command, uint8_t buf[], uint8_t len, uin
     //DMSG_HEX(cmd);
 
     uint8_t sum = PN532_PN532TOHOST + cmd;
-    for (uint8_t i = 2; i < length; i++)
+    for (uint8_t i = 0; i < length; i++)
     {
         buf[i] = read();
         sum += buf[i];
@@ -244,7 +236,6 @@ int16_t PN532_I2C::readResponse(uint8_t command, uint8_t buf[], uint8_t len, uin
     }
     read(); // POSTAMBLE
 
-    Serial.println(String("length: ") + String(length) + ", len: " + String(len));
     return length;
 }
 
