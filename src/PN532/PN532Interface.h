@@ -3,6 +3,7 @@
 #ifndef __PN532_INTERFACE_H__
 #define __PN532_INTERFACE_H__
 
+#include "Utils.h"
 #include <stdint.h>
 
 #define PN532_PREAMBLE                (0x00)
@@ -23,6 +24,8 @@
 #define REVERSE_BITS_ORDER(b)         b = (b & 0xF0) >> 4 | (b & 0x0F) << 4; \
                                       b = (b & 0xCC) >> 2 | (b & 0x33) << 2; \
                                       b = (b & 0xAA) >> 1 | (b & 0x55) << 1
+
+# define PRINT_DEBUG(x) Utils::Print(__FILE__); Serial.print(":"); Serial.print(__LINE__);Serial.print(" ");Serial.print(x);
 
 class PN532Interface
 {
@@ -50,6 +53,7 @@ public:
     *           <0      failed to read response
     */
     virtual int16_t readResponse(uint8_t buf[], uint8_t len, uint16_t timeout = 1000) = 0;
+    virtual int16_t readResponse(uint8_t command, uint8_t buf[], uint8_t len, uint16_t timeout = 1000) = 0;
 };
 
 #endif

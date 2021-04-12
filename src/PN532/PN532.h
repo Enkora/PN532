@@ -16,6 +16,8 @@
 #include "DES.h"
 #include "AES128.h"
 
+# define PRINT_DEBUG(x) Utils::Print(__FILE__); Serial.print(":"); Serial.print(__LINE__);Serial.print(" ");Serial.println(x);
+
 // DESFIRE CONTENT STARTS HERE
 
 //#include "DesFireKey.h"
@@ -434,6 +436,16 @@ public:
     bool ReadPassiveTargetID(byte* uidBuffer, byte* uidLength, eCardType* pe_CardType);
     bool inDataExchange(uint8_t *send, uint8_t sendLength, uint8_t *response, uint8_t *responseLength);
 
+    // NEW functions
+    bool SendCommandCheckAck(byte *cmd, byte cmdlen);
+    void WriteCommand(byte* cmd, byte cmdlen);
+    void SendPacket(byte* buff, byte len);
+    bool ReadAck();
+    byte ReadData(byte* buff, byte len);
+    bool ReadPacket(byte* buff, byte len);
+    bool WaitReady();
+    bool IsReady();
+
     // DesFire functions
     bool GetCardVersion(DESFireCardVersion* pk_Version);
     bool FormatCard();
@@ -505,7 +517,11 @@ public:
 private:
     int  DataExchange(uint8_t      u8_Command, TxBuffer* pi_Params, uint8_t* u8_RecvBuf, int s32_RecvSize, DESFireStatus* pe_Status, DESFireCmac e_Mac);
     int  DataExchange(TxBuffer* pi_Command, TxBuffer* pi_Params, uint8_t* u8_RecvBuf, int s32_RecvSize, DESFireStatus* pe_Status, DESFireCmac e_Mac);
+    int  DataExchangeOLD(TxBuffer* pi_Command, TxBuffer* pi_Params, uint8_t* u8_RecvBuf, int s32_RecvSize, DESFireStatus* pe_Status, DESFireCmac e_Mac);
+    int  DataExchangeReadFile(uint8_t      u8_Command, TxBuffer* pi_Params, uint8_t* u8_RecvBuf, int s32_RecvSize, DESFireStatus* pe_Status, DESFireCmac e_Mac);
+    int  DataExchangeReadFile(TxBuffer* pi_Command, TxBuffer* pi_Params, uint8_t* u8_RecvBuf, int s32_RecvSize, DESFireStatus* pe_Status, DESFireCmac e_Mac);
     bool CheckCardStatus(DESFireStatus e_Status);
+    bool CheckPN532Status(byte u8_Status);
     bool SelftestKeyChange(uint32_t u32_Application, DESFireKey* pi_DefaultKey, DESFireKey* pi_NewKeyA, DESFireKey* pi_NewKeyB);
 
     uint8_t       mu8_LastAuthKeyNo; // The last key which did a successful authetication (0xFF if not yet authenticated)
@@ -526,7 +542,7 @@ private:
     uint8_t _felicaIDm[8]; // FeliCa IDm (NFCID2)
     uint8_t _felicaPMm[8]; // FeliCa PMm (PAD)
 
-    byte mu8_DebugLevel = 1;   // 0, 1, or 2
+    byte mu8_DebugLevel = 2;   // 0, 1, or 2
     uint8_t pn532_packetbuffer[PN532_PACKBUFFSIZE];
 
     PN532Interface *_interface;

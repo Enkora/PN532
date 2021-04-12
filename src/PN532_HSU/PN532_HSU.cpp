@@ -1,16 +1,21 @@
 
 #include "PN532_HSU.h"
-#include "PN532_debug.h"
+#include <HardwareSerial.h>
+#include "PN532/PN532_debug.h"
 
-PN532_HSU::PN532_HSU(HardwareSerial &serial)
+HardwareSerial MySerial(0);
+
+PN532_HSU::PN532_HSU(int8_t tx, int8_t rx)
 {
-    _serial = &serial;
+    _serial = &MySerial;
     command = 0;
+    tx_pin = tx;
+    rx_pin = rx;
 }
 
 void PN532_HSU::begin()
 {
-    _serial->begin(115200);
+    _serial->begin(115200, SERIAL_8N1, tx_pin, rx_pin);
 }
 
 void PN532_HSU::wakeup()
@@ -85,6 +90,10 @@ int8_t PN532_HSU::writeCommand(const uint8_t *header, uint8_t hlen, const uint8_
     return readAckFrame();
 }
 
+int16_t PN532_HSU::readResponse(uint8_t command, uint8_t buf[], uint8_t len, uint16_t timeout) {
+    return readResponse(buf, len, timeout);
+}
+
 int16_t PN532_HSU::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
 {
     uint8_t tmp[3];
@@ -94,6 +103,7 @@ int16_t PN532_HSU::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
     /** Frame Preamble and Start Code */
     if (receive(tmp, 3, timeout) <= 0)
     {
+        DMSG("Timeout 1");
         return PN532_TIMEOUT;
     }
     if (0 != tmp[0] || 0 != tmp[1] || 0xFF != tmp[2])
@@ -106,6 +116,7 @@ int16_t PN532_HSU::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
     uint8_t length[2];
     if (receive(length, 2, timeout) <= 0)
     {
+        DMSG("Timeout 2");
         return PN532_TIMEOUT;
     }
     if (0 != (uint8_t)(length[0] + length[1]))
@@ -116,6 +127,7 @@ int16_t PN532_HSU::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
     length[0] -= 2;
     if (length[0] > len)
     {
+        DMSG("No space error");
         return PN532_NO_SPACE;
     }
 
@@ -123,6 +135,7 @@ int16_t PN532_HSU::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
     uint8_t cmd = command + 1; // response command
     if (receive(tmp, 2, timeout) <= 0)
     {
+        DMSG("Timeout 3");
         return PN532_TIMEOUT;
     }
     if (PN532_PN532TOHOST != tmp[0] || cmd != tmp[1])
@@ -133,6 +146,7 @@ int16_t PN532_HSU::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
 
     if (receive(buf, length[0], timeout) != length[0])
     {
+        DMSG("Timeout 4");
         return PN532_TIMEOUT;
     }
     uint8_t sum = PN532_PN532TOHOST + cmd;
@@ -144,6 +158,7 @@ int16_t PN532_HSU::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
     /** checksum and postamble */
     if (receive(tmp, 2, timeout) <= 0)
     {
+        DMSG("Timeout 5");
         return PN532_TIMEOUT;
     }
     if (0 != (uint8_t)(sum + tmp[0]) || 0 != tmp[1])
@@ -221,3 +236,39 @@ int8_t PN532_HSU::receive(uint8_t *buf, int len, uint16_t timeout)
     }
     return read_bytes;
 }
+
+/*
+uint8_t PN532_HSU::RequestFrom(uint8_t u8_Quantity)
+{
+    return;
+
+    const int BUFFER_SIZE = u8_Quantity;
+    char buf[BUFFER_SIZE];
+    rlen = Serial.readBytes(buf, u8_Quantity);
+
+    if (rlen = u8_Quantity) return buf;
+    return
+    return _wire->requestFrom(PN532_I2C_ADDRESS, u8_Quantity);
+
+ }
+
+int PN532_HSU::Read()
+{
+    return _serial->read();
+}
+
+void PN532_HSU::BeginTransmission(uint8_t u8_Address)
+{
+    return;
+}
+
+void PN532_HSU::Write(uint8_t u8_Data)
+{
+    _serial->write(u8_Data);
+}
+
+void PN532_HSU::EndTransmission()
+{
+    return;
+}
+*/
