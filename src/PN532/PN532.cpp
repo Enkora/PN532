@@ -30,13 +30,10 @@ PN532::PN532(PN532Interface &interface) : mi_CmacBuffer(mu8_CmacBuffer_Data, siz
     mu32_LastApplication = 0x000000; // No application selected
 
     // The PICC master key on an empty card is a simple DES key filled with 8 zeros
-    uint8_t NEW_KEY_2[16] = {0};
-    for (int i = 0; i < 16; i++) NEW_KEY_2[i] = NEW_KEY[15 - i];
-
     const uint8_t ZERO_KEY[24] = {0};
-    DES2_DEFAULT_KEY.SetKeyData(NEW_KEY, 8, 0); // simple DES
+    DES2_DEFAULT_KEY.SetKeyData(ZERO_KEY, 8, 0); // simple DES
     DES3_DEFAULT_KEY.SetKeyData(ZERO_KEY, 24, 0); // triple DES
-    AES_DEFAULT_KEY.SetKeyData(NEW_KEY, 16, 0);
+    AES_DEFAULT_KEY.SetKeyData(ZERO_KEY, 16, 0);
 }
 
 /**************************************************************************/

@@ -6,7 +6,6 @@
   HardwareSerial MySerial(2);
   PN532_HSU pn532hsu(MySerial);
   PN532 nfc(pn532hsu);
- */
 /////
  #include "PN532_HSU/PN532_HSU.h"
 #include "PN532/PN532.h"
@@ -14,8 +13,8 @@
 
 PN532_HSU* pn532;
 PN532* nfc;
+ */
 
-/*
 #include <Wire.h>
 #include <PN532_I2C/PN532_I2C.h>
 #include <PN532/PN532.h>
@@ -23,7 +22,6 @@ PN532* nfc;
 
 PN532_I2C pn532i2c(Wire);
 PN532 nfc(pn532i2c);
-*/
 
 # define PRINT_DEBUG(x) Utils::Print(__FILE__); Serial.print(":"); Serial.print(__LINE__);Serial.print(" ");Serial.print(x);
 AES mi_AesSessionKey;
@@ -36,9 +34,13 @@ void setup(void) {
   }
   delay(1000);
   Serial.println("Hello 1!");
+    /*
+      pn532 = new PN532_HSU(13, 32);
+      nfc = new PN532(*pn532);
+  */
 
-    pn532 = new PN532_HSU(13, 32);
-    nfc = new PN532(*pn532);
+  nfc.AES_DEFAULT_KEY.SetKeyData(NEW_KEY, 16, 0);
+  nfc.DES2_DEFAULT_KEY.SetKeyData(NEW_KEY, 8, 0); // simple DES
 
 /*
     byte session_key[] = { 0x76, 0x6f, 0x69, 0x6a, 0x9c, 0xcd, 0xbd, 0x8b, 0x69, 0x6f, 0x6a, 0x39, 0x28, 0xed, 0x94, 0x7b };
@@ -114,11 +116,11 @@ void setup(void) {
     }
 */
 
-  nfc->begin();
+  nfc.begin();
   uint32_t versiondata = 0;
   do {
       Serial.println("Didn't find PN53x board");
-      versiondata = nfc->getFirmwareVersion();
+      versiondata = nfc.getFirmwareVersion();
   } while (! versiondata);
   // Got ok data, print it out!
   Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX);
@@ -126,7 +128,7 @@ void setup(void) {
   Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
 
   // configure board to read RFID tags
-  nfc->SAMConfig();
+  nfc.SAMConfig();
 
   Serial.println("Waiting for an ISO14443A Card ...");
 }
@@ -140,18 +142,18 @@ void loop(void) {
   // Wait for an ISO14443A type cards (Mifare, etc.).  When one is found
   // 'uid' will be populated with the UID, and uidLength will indicate
   // if the uid is 4 bytes (Mifare Classic) or 7 bytes (Mifare Ultralight, DesFire)
-  nfc->SAFE_TEST();
-//  success = nfc->readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
+  nfc.SAFE_TEST();
+//  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
 
   if (success) {
     // Display some basic information about the card
     Serial.println("Found an ISO14443A card");
     Serial.print("  UID Length: "); Serial.print(uidLength, DEC); Serial.println(" bytes");
     Serial.print("  UID Value: ");
-    nfc->PrintHex(uid, uidLength);
+    nfc.PrintHex(uid, uidLength);
     Serial.println("");
 
-    nfc->SAFE_TEST();
+    nfc.SAFE_TEST();
 
     if (uidLength == 4)
     {
@@ -166,7 +168,7 @@ void loop(void) {
 	  // Start with block 4 (the first block of sector 1) since sector 0
 	  // contains the manufacturer data and it's probably better just
 	  // to leave it alone unless you know what you're doing
-      success = nfc->mifareclassic_AuthenticateBlock(uid, uidLength, 4, 0, keya);
+      success = nfc.mifareclassic_AuthenticateBlock(uid, uidLength, 4, 0, keya);
 
       if (success)
       {
@@ -176,16 +178,16 @@ void loop(void) {
         // If you want to write something to block 4 to test with, uncomment
 		// the following line and this text should be read back in a minute
         // data = { 'a', 'd', 'a', 'f', 'r', 'u', 'i', 't', '.', 'c', 'o', 'm', 0, 0, 0, 0};
-        // success = nfc->mifareclassic_WriteDataBlock (4, data);
+        // success = nfc.mifareclassic_WriteDataBlock (4, data);
 
         // Try to read the contents of block 4
-        success = nfc->mifareclassic_ReadDataBlock(4, data);
+        success = nfc.mifareclassic_ReadDataBlock(4, data);
 
         if (success)
         {
           // Data seems to have been read ... spit it out
           Serial.println("Reading Block 4:");
-          nfc->PrintHexChar(data, 16);
+          nfc.PrintHexChar(data, 16);
           Serial.println("");
 
           // Wait a bit before reading the card again
@@ -210,11 +212,11 @@ void loop(void) {
       // Try to read the first general-purpose user page (#4)
       Serial.println("Reading page 4");
       uint8_t data[32];
-      success = nfc->mifareultralight_ReadPage (4, data);
+      success = nfc.mifareultralight_ReadPage (4, data);
       if (success)
       {
         // Data seems to have been read ... spit it out
-        nfc->PrintHexChar(data, 4);
+        nfc.PrintHexChar(data, 4);
         Serial.println("");
 		
         // Wait a bit before reading the card again

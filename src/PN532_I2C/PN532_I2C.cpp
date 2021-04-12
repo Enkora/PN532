@@ -158,8 +158,7 @@ int16_t PN532_I2C::getResponseLength(uint8_t buf[], uint8_t len, uint16_t timeou
     return length;
 }
 
-int16_t PN532_I2C::readResponse(uint8_t command, uint8_t buf[], uint8_t len, uint16_t timeout)
-{
+int16_t PN532_I2C::readResponse(uint8_t command, uint8_t buf[], uint8_t len, uint16_t timeout) {
     uint16_t time = 0;
     uint8_t length;
 
