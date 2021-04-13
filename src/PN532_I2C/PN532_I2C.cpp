@@ -207,8 +207,9 @@ int16_t PN532_I2C::readResponse(uint8_t command, uint8_t buf[], uint8_t len, uin
     {
         return PN532_INVALID_FRAME;
     }
+    buf[0] = PN532_PN532TOHOST;
+    buf[1] = (cmd);
 
-    length -= 2;
     if (length > len)
     {
         DMSG("PN532_NO_SPACE");
@@ -219,7 +220,7 @@ int16_t PN532_I2C::readResponse(uint8_t command, uint8_t buf[], uint8_t len, uin
     //DMSG_HEX(cmd);
 
     uint8_t sum = PN532_PN532TOHOST + cmd;
-    for (uint8_t i = 0; i < length; i++)
+    for (uint8_t i = 2; i < length; i++)
     {
         buf[i] = read();
         sum += buf[i];
