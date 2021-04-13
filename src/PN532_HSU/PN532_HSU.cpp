@@ -3,7 +3,7 @@
 #include <HardwareSerial.h>
 #include "PN532/PN532_debug.h"
 
-HardwareSerial MySerial(0);
+HardwareSerial MySerial(1);
 
 PN532_HSU::PN532_HSU(int8_t tx, int8_t rx)
 {

@@ -1,7 +1,7 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
-//#define DEBUG
+//#define DEBUG_X
 
 #include "Arduino.h"
 
@@ -11,7 +11,7 @@
     #define DEBUG_SERIAL Serial
 #endif
 
-#ifdef DEBUG
+#ifdef DEBUG_X
 #define DMSG(args...)       DEBUG_SERIAL.print(args)
 #define DMSG_STR(str)       DEBUG_SERIAL.println(str)
 #define DMSG_HEX(num)       DEBUG_SERIAL.print(' '); DEBUG_SERIAL.print((num>>4)&0x0F, HEX); DEBUG_SERIAL.print(num&0x0F, HEX)
