@@ -54,11 +54,13 @@ public:
     */
     virtual int16_t readResponse(uint8_t command, uint8_t buf[], uint8_t len, uint16_t timeout = 1000) = 0;
 
+#if PROTOCOL != PROT_HSU
     virtual uint8_t RequestFrom(uint8_t u8_Quantity);
     virtual int Read();
     virtual void BeginTransmission(uint8_t u8_Address);
     virtual void Write(uint8_t u8_Data);
     virtual void EndTransmission();
+#endif
 };
 
 #endif

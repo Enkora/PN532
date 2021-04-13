@@ -22,16 +22,20 @@
 // ATTENTION: Only one of the following defines must be set to true!
 // NOTE: In Software SPI mode there is no external libraray required. Only 4 regular digital pins are used.
 // If you want to transfer the code to another processor the easiest way will be to use Software SPI mode.
-#define USE_SOFTWARE_SPI   FALSE   // Visual Studio needs this in upper case
-#define USE_HARDWARE_SPI   FALSE  // Visual Studio needs this in upper case
-#define USE_HARDWARE_I2C   TRUE  // Visual Studio needs this in upper case
+#if PROTOCOL == PROT_SPI
+    #define USE_SOFTWARE_SPI   FALSE   // Visual Studio needs this in upper case
+    #define USE_HARDWARE_SPI   TRUE  // Visual Studio needs this in upper case
+#endif
+
 // ********************************************************************************/
 
 
-#if USE_HARDWARE_SPI
-#include <SPI.h>  // Hardware SPI bus
-#elif USE_HARDWARE_I2C
-#include <Wire.h> // Hardware I2C bus
+#if PROTOCOL == PROT_I2C
+    #include <Wire.h> // Hardware I2C bus
+#elif PROTOCOL == PROT_HSU
+// no #include required
+#elif USE_HARDWARE_SPI
+    #include <SPI.h>  // Hardware SPI bus
 #elif USE_SOFTWARE_SPI
 // no #include required
 #else
@@ -103,7 +107,7 @@ public:
 
 // -------------------------------------------------------------------------------------------------------------------
 
-#if USE_HARDWARE_I2C
+#if PROTOCOL == PROT_I2C
 // This class implements Hardware I2C (2 wire bus with pull-up resistors). It is not used for the DoorOpener sketch.
     // NOTE: This class is not used when you switched to SPI mode with PN532::InitSoftwareSPI() or PN532::InitHardwareSPI().
     class I2cClass

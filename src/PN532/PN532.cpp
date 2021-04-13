@@ -2440,7 +2440,7 @@ int PN532::DataExchange(TxBuffer *pi_Command,               // in (command + par
     Return true if the PN532 is ready with a response.
 **************************************************************************/
 bool PN532::IsReady() {
-#if USE_HARDWARE_I2C
+#if PROTOCOL == PROT_I2C
     {
         // After reading this byte, the bus must be released with a Stop condition
         HAL(RequestFrom)(1);
@@ -2507,7 +2507,7 @@ void PN532::WriteCommand(byte *cmd, byte cmdlen) {
     Send a data packet
 **************************************************************************/
 void PN532::SendPacket(byte *buff, byte len) {
-#if USE_HARDWARE_I2C
+#if PROTOCOL == PROT_I2C
     {
         Utils::DelayMilli(2); // delay is for waking up the board
         HAL(BeginTransmission)(PN532_I2C_ADDRESS);
@@ -2640,7 +2640,7 @@ byte PN532::ReadData(byte *buff, byte len) {
 bool PN532::ReadPacket(byte *buff, byte len) {
     if (!WaitReady())
         return false;
-#if USE_HARDWARE_I2C
+#if PROTOCOL == PROT_I2C
     {
         Utils::DelayMilli(2);
         // read (n+1 to take into account leading Ready byte)

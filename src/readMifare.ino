@@ -1,29 +1,21 @@
-/*
-  #include <PN532_HSU.h>
-  #include <PN532.h>
-  #include <HardwareSerial.h>
+#include "PN532/Utils.h"
 
-  HardwareSerial MySerial(2);
-  PN532_HSU pn532hsu(MySerial);
-  PN532 nfc(pn532hsu);
-/////
- #include "PN532_HSU/PN532_HSU.h"
-#include "PN532/PN532.h"
-//#include <NfcAdapter.h>
+#if PROTOCOL == PROT_HSU
+    #include "PN532_HSU/PN532_HSU.h"
+    #include "PN532/PN532.h"
 
-PN532_HSU* pn532;
-PN532* nfc;
- */
+PN532_HSU pn532(22, 21);
+PN532 nfc(pn532);
 
-#include <Wire.h>
-#include <PN532_I2C/PN532_I2C.h>
-#include <PN532/PN532.h>
-//#include <NfcAdapter.h>
+#elif PROTOCOL == PROT_I2C
+    #include <Wire.h>
+    #include <PN532_I2C/PN532_I2C.h>
+    #include <PN532/PN532.h>
 
-PN532_I2C pn532i2c(Wire);
-PN532 nfc(pn532i2c);
+    PN532_I2C pn532i2c(Wire);
+    PN532 nfc(pn532i2c);
+#endif
 
-# define PRINT_DEBUG(x) Utils::Print(__FILE__); Serial.print(":"); Serial.print(__LINE__);Serial.print(" ");Serial.print(x);
 AES mi_AesSessionKey;
 
 void setup(void) {
@@ -34,105 +26,25 @@ void setup(void) {
   }
   delay(1000);
   Serial.println("Hello 1!");
-    /*
-      pn532 = new PN532_HSU(13, 32);
-      nfc = new PN532(*pn532);
-  */
 
   nfc.AES_DEFAULT_KEY.SetKeyData(NEW_KEY, 16, 0);
   nfc.DES2_DEFAULT_KEY.SetKeyData(NEW_KEY, 8, 0); // simple DES
 
-/*
-    byte session_key[] = { 0x76, 0x6f, 0x69, 0x6a, 0x9c, 0xcd, 0xbd, 0x8b, 0x69, 0x6f, 0x6a, 0x39, 0x28, 0xed, 0x94, 0x7b };
-    byte command[] = { 0xbd, 0x01, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00 };
-    byte reply[] = { 0x71, 0xcd, 0x18, 0xd2, 0x74, 0xee, 0x4c, 0x78, 0x9b, 0x84, 0x9e, 0x91, 0x6b, 0x62, 0x60, 0x46 };
-
-    byte iv2bAssertValue[] = { 0xa7, 0x29, 0x26, 0xd9, 0xbd, 0xe2, 0xdb, 0x46, 0x24, 0x0e, 0x93, 0x70, 0x18, 0x8b, 0x7e, 0xad };
-    byte fileDataAssertValue[] = { 0x3a, 0xde, 0x68, 0xb1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf4, 0x17, 0x82, 0xe2, 0x00, 0x00 };
-    byte result[16];
-
-    TX_BUFFER(sesbuf, 16);
-    sesbuf.AppendBuf(session_key, 16);
-    mi_AesSessionKey.SetKeyData(sesbuf, sesbuf.GetCount(), 0);
-    PRINT_DEBUG("Session key set: ")
-    mi_AesSessionKey.PrintKey(LF); // correct session key
-
-    TX_BUFFER(commandbuf, 16);
-    commandbuf.AppendBuf(command, 8);
-    PRINT_DEBUG("Command:  ")
-    Utils::PrintHexBuf(command, 8, LF);
-
-    byte u8_CalcMac[16];
-
-    if (mi_AesSessionKey.CalculateCmac(commandbuf, u8_CalcMac)) {
-        PRINT_DEBUG("u8_CalcMac:  ")
-        Utils::PrintHexBuf(u8_CalcMac, mi_AesSessionKey.GetBlockSize(), LF); //
-    // cipher = AES.new(session_key, AES.MODE_CBC, iv2b)
-    // file_data = cipher.decrypt(reply)
-        PRINT_DEBUG("IV:          ")
-        mi_AesSessionKey.PrintIV();
-        Serial.println("");
-        // memset(result, 0, 16);
-        PRINT_DEBUG("card reply:  ")
-        Utils::PrintHexBuf(reply, mi_AesSessionKey.GetBlockSize(), LF); //
-        mi_AesSessionKey.CryptDataCBC(DESFireCBC::CBC_RECEIVE, DESFireCipher::KEY_DECIPHER, result, reply, 16);
-        // bool CryptDataCBC(E, DESFireCipher::KEY_DECIPHER, byte* u8_Out, const byte* u8_In, int s32_ByteCount)
-        // mi_AesSessionKey.CryptDataBlock(result, reply, DESFireCipher::KEY_DECIPHER); // wong data: 9D F7 4E 68 BD E2 DB 46 24 0E 67 67 9A 69 7E AD
-        PRINT_DEBUG("decode:      ")
-        // Utils::Print("decode:      ");
-        Utils::PrintHexBuf(result, mi_AesSessionKey.GetBlockSize(), LF); //
-
-        // wrong: u8_CalcMac:  5B BE CE DA F1 E8 68 28 62 71 9F 11 38 09 06 23
-        // right: 0xa7, 0x29, 0x26, 0xd9, 0xbd, 0xe2, 0xdb, 0x46, 0x24, 0x0e, 0x93, 0x70, 0x18, 0x8b, 0x7e, 0xad
-
-        if (mi_AesSessionKey.CalculateCmac(commandbuf, u8_CalcMac)) {
-            Utils::Print("u8_CalcMac2: ");
-            Utils::PrintHexBuf(u8_CalcMac, mi_AesSessionKey.GetBlockSize(), LF); // wrong iv2b
-            // wrong: u8_CalcMac:  5B BE CE DA F1 E8 68 28 62 71 9F 11 38 09 06 23
-            // right: 0xa7, 0x29, 0x26, 0xd9, 0xbd, 0xe2, 0xdb, 0x46, 0x24, 0x0e, 0x93, 0x70, 0x18, 0x8b, 0x7e, 0xad
-        }
-    }
-    else {
-        Serial.println("u8_CalcMac failed.");
-    }
-    delay(1000);
-/*
-
-
-
-    cmac_aes = CMAC.new(session_key, ciphermod=AES);
-    cmac_aes.update(command);
-    iv2b = cmac_aes.digest();
-
-    if (iv2b != iv2bAssertValue) {
-        Serial.print("Failed at iv2bAssertValue");
-    }
-
-    cipher = AES.new(session_key, AES.MODE_CBC, iv2b);
-    file_data = cipher.decrypt(reply);
-
-    if (file_data != fileDataAssertValue) {
-        Serial.print("Failed at fileDataAssertValue");
-    }
-*/
-
   nfc.begin();
   uint32_t versiondata = 0;
-  do {
-      Serial.println("Didn't find PN53x board");
+  while (true) {
       versiondata = nfc.getFirmwareVersion();
-  } while (! versiondata);
-  // Got ok data, print it out!
+      if (versiondata) break;
+      Serial.println("Didn't find PN53x board");
+  }
+
   Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX);
   Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC);
   Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
 
-  // configure board to read RFID tags
   nfc.SAMConfig();
-
   Serial.println("Waiting for an ISO14443A Card ...");
 }
-
 
 void loop(void) {
   uint8_t success = 0;
