@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "UnreachableCode"
 /**************************************************************************/
 /*!
     @file     PN532.cpp
@@ -13,11 +11,11 @@
 #include "PN532_debug.h"
 #include "Secrets.h"
 #include <string.h>
+#include "Utils.h"
 
 #define HAL(func)   (_interface->func)
 
 #define FELICA false
-#define USE_HARDWARE_I2C false
 #define PN532_I2C_ADDRESS (0x48 >> 1)
 #define PN532_I2C_READY 0x01
 #define PN532_I2C_TIMEOUT  1000
@@ -4172,5 +4170,3 @@ bool PN532::SelftestKeyChange(uint32_t u32_Application, DESFireKey *pi_DefaultKe
 
     return true;
 }
-
-#pragma clang diagnostic pop

@@ -16,8 +16,6 @@
 #include "DES.h"
 #include "AES128.h"
 
-# define PRINT_DEBUG(x) Utils::Print(__FILE__); Serial.print(":"); Serial.print(__LINE__);Serial.print(" ");Serial.println(x);
-
 // DESFIRE CONTENT STARTS HERE
 
 //#include "DesFireKey.h"

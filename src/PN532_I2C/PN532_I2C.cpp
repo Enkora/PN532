@@ -26,7 +26,7 @@ void PN532_I2C::wakeup()
 
 uint8_t PN532_I2C::RequestFrom(uint8_t u8_Quantity)
 {
-    return _wire->requestFrom(PN532_I2C_ADDRESS, u8_Quantity);
+    return _wire->requestFrom((uint8_t) PN532_I2C_ADDRESS, u8_Quantity);
 }
 
 // Read one uint8_t from the buffer that has been read when calling RequestFrom()

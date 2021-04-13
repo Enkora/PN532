@@ -13,8 +13,7 @@
 #define DESFIRE_KEY_H
 
 #include "Buffer.h"
-
-# define PRINT_DEBUG(x) Utils::Print(__FILE__); Serial.print(":"); Serial.print(__LINE__);Serial.print(" ");Serial.print(x);
+#include "Utils.h"
 
 enum DESFireCipher
 {

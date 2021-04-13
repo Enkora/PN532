@@ -129,7 +129,7 @@ bool EmulateTag::emulate(const uint16_t tgInitAsTargetTimeout)
   tagWrittenByInitiator = false;
 
   uint8_t rwbuf[128];
-  uint8_t sendlen;
+  uint8_t sendlen = 0;
   int16_t status;
   tag_file currentFile = NONE;
   uint16_t cc_size = sizeof(compatibility_container);
