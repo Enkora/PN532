@@ -4,7 +4,7 @@
     #include "PN532_HSU/PN532_HSU.h"
     #include "PN532/PN532.h"
 
-PN532_HSU pn532(22, 21);
+PN532_HSU pn532(21, 22);
 PN532 nfc(pn532);
 
 #elif PROTOCOL == PROT_I2C
