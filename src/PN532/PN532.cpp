@@ -460,7 +460,7 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
     */
 
     // if no tags were found
-    if (pn532_packetbuffer[2] != 1) {
+    if (pn532_packetbuffer[0] != 1) {
         Serial.print("pn532_packetbuffer 1: ");
         for (int i = 0; i < 16; i++) {
             Serial.print(String(pn532_packetbuffer[i], HEX) + " ");
