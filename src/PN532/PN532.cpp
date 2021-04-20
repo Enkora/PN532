@@ -424,8 +424,6 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
     }
 */
 
-    // good 4A 01 00 04 20 07 04 44
-    // bad  4A 01 00 44 20 07 04 44
     if (HAL(writeCommand)(pn532_packetbuffer, 3)) {
         Serial.println("writeCommand failed");
         return false;  // command failed
@@ -433,20 +431,17 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
 
     Serial.print("pn532_packetbuffer after write command: ");
     for (int i = 0; i < 16; i++) {
-        Serial.print(String(pn532_packetbuffer[i], HEX) + " ");
+        DMSG_HEX(pn532_packetbuffer[i]);
     }
-    Serial.println();
+    DMSG("\n");
 
-    // read data packet
     if (0 >
         HAL(readResponse)(PN532_COMMAND_INLISTPASSIVETARGET, pn532_packetbuffer, sizeof(pn532_packetbuffer), timeout)) {
         Serial.println("readResponse failed");
         return false;
     }
 
-    // check some basic stuff
     /* ISO14443A card response should be in the following format:
-
       byte            Description
       -------------   ------------------------------------------
       b0              Tags Found

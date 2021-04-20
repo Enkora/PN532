@@ -8,9 +8,9 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "PN532/PN532Interface.h"
+#include "PN532/PN532_debug.h"
 
-class PN532_I2C : public PN532Interface
-{
+class PN532_I2C : public PN532Interface {
 public:
     PN532_I2C(TwoWire &wire);
 
@@ -43,8 +43,7 @@ private:
 #endif
     }
 
-    inline uint8_t read()
-    {
+    inline uint8_t read() {
 #if ARDUINO >= 100
         return _wire->read();
 #else
