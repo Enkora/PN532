@@ -24,6 +24,7 @@ void setup(void) {
       Serial.print(".");
       delay(500);
   }
+
   delay(1000);
   Serial.println("Hello 1!");
 
