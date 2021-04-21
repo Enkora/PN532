@@ -9,7 +9,7 @@
 #else
 #include <Arduino.h>
 
-# define PRINT_DEBUG(x) Utils::Print(__FILE__); Serial.print(":"); Serial.print(__LINE__);Serial.print(" ");Serial.print(x);
+#define PRINT_DEBUG(x) Utils::Print(__FILE__); Serial.print(":"); Serial.print(__LINE__);Serial.print(" ");Serial.println(x);
 
 #define TRUE   true
 #define FALSE  false

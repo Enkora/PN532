@@ -61,14 +61,11 @@ int8_t PN532_I2C::writeCommand(const uint8_t *header, uint8_t hlen, const uint8_
     write(PN532_HOSTTOPN532);
     uint8_t sum = PN532_HOSTTOPN532; // sum of TFI + DATA
 
-    DMSG("write: ");
-
     for (uint8_t i = 0; i < hlen; i++) {
         if (write(header[i])) {
             sum += header[i];
             //DMSG_HEX(header[i]);
         }
-
         else {
             DMSG("\nToo many data to send, I2C doesn't support such a big packet\n"); // I2C max packet: 32 bytes
             return PN532_INVALID_FRAME;
@@ -167,7 +164,6 @@ int16_t PN532_I2C::readResponse(uint8_t command, uint8_t buf[], uint8_t len, uin
     }
 
     length = read();
-    Serial.println(String("length: ") + String(length) + ", len: " + String(len));
 
     if (0 != (uint8_t)(length + read())) { // checksum of length
         DMSG("2 PN532_INVALID_FRAME");
@@ -212,9 +208,7 @@ int8_t PN532_I2C::readAckFrame() {
     const uint8_t PN532_ACK[] = {0, 0, 0xFF, 0, 0xFF, 0};
     uint8_t ackBuf[sizeof(PN532_ACK)];
 
-    //DMSG("wait for ack at : ");
-    //DMSG(millis());
-    //DMSG('\n');
+    DMSG("Ack: ");
 
     uint16_t time = 0;
     do {
@@ -245,5 +239,6 @@ int8_t PN532_I2C::readAckFrame() {
         return PN532_INVALID_ACK;
     }
 
+    DMSG("\n");
     return 0;
 }

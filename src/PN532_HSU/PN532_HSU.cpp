@@ -5,26 +5,32 @@
 
 HardwareSerial MySerial(1);
 
-PN532_HSU::PN532_HSU(int8_t tx, int8_t rx)
-{
+PN532_HSU::PN532_HSU(int8_t tx, int8_t rx) {
     _serial = &MySerial;
     command = 0;
     tx_pin = tx;
     rx_pin = rx;
 }
 
-void PN532_HSU::begin()
-{
+void PN532_HSU::write(uint8_t data) {
+    _serial->write(data);
+    DMSG_HEX(data);
+}
+
+void PN532_HSU::write(const uint8_t *data, uint8_t len) {
+    for (uint8_t i = 0; i < len; i++) write(data[i]);
+}
+
+void PN532_HSU::begin() {
     _serial->begin(115200, SERIAL_8N1, tx_pin, rx_pin);
 }
 
-void PN532_HSU::wakeup()
-{
-    _serial->write(0x55);
-    _serial->write(0x55);
-    _serial->write(uint8_t(0x00));
-    _serial->write(uint8_t(0x00));
-    _serial->write(uint8_t(0x00));
+void PN532_HSU::wakeup() {
+    write(0x55);
+    write(0x55);
+    write(uint8_t(0x00));
+    write(uint8_t(0x00));
+    write(uint8_t(0x00));
 
     /** dump serial buffer */
     if (_serial->available()) {
@@ -34,56 +40,45 @@ void PN532_HSU::wakeup()
         uint8_t ret = _serial->read();
         DMSG_HEX(ret);
     }
+    DMSG("\n");
 }
 
-int8_t PN532_HSU::writeCommand(const uint8_t *header, uint8_t hlen, const uint8_t *body, uint8_t blen)
-{
+int8_t PN532_HSU::writeCommand(const uint8_t *header, uint8_t hlen, const uint8_t *body, uint8_t blen) {
+    if (_serial->available()) DMSG("Dump serial buffer: ");
 
-    /** dump serial buffer */
-    if (_serial->available())
-    {
-        DMSG("Dump serial buffer: ");
-    }
-    while (_serial->available())
-    {
+    while (_serial->available()) {
         uint8_t ret = _serial->read();
         DMSG_HEX(ret);
     }
 
     command = header[0];
-
-    _serial->write(uint8_t(PN532_PREAMBLE));
-    _serial->write(uint8_t(PN532_STARTCODE1));
-    _serial->write(uint8_t(PN532_STARTCODE2));
-
     uint8_t length = hlen + blen + 1; // length of data field: TFI + DATA
-    _serial->write(length);
-    _serial->write(~length + 1); // checksum of length
-
-    _serial->write(PN532_HOSTTOPN532);
     uint8_t sum = PN532_HOSTTOPN532; // sum of TFI + DATA
 
-    DMSG("\nWrite: ");
+    DMSG("Sending: ");
 
-    _serial->write(header, hlen);
-    for (uint8_t i = 0; i < hlen; i++)
-    {
+    write(uint8_t(PN532_PREAMBLE));
+    write(uint8_t(PN532_STARTCODE1));
+    write(uint8_t(PN532_STARTCODE2));
+    write(length);
+    write(~length + 1); // checksum of length
+    write(PN532_HOSTTOPN532);
+    DMSG(", H:");
+    write(header, hlen);
+    DMSG(", B:");
+    write(body, blen);
+
+    for (uint8_t i = 0; i < hlen; i++) {
         sum += header[i];
-
-        DMSG_HEX(header[i]);
     }
 
-    _serial->write(body, blen);
-    for (uint8_t i = 0; i < blen; i++)
-    {
+    for (uint8_t i = 0; i < blen; i++) {
         sum += body[i];
-
-        DMSG_HEX(body[i]);
     }
 
     uint8_t checksum = ~sum + 1; // checksum of TFI + DATA
-    _serial->write(checksum);
-    _serial->write(uint8_t(PN532_POSTAMBLE));
+    write(checksum);
+    write(uint8_t(PN532_POSTAMBLE));
 
     DMSG("\n");
     return readAckFrame();
@@ -113,8 +108,7 @@ int16_t PN532_HSU::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout) {
         DMSG("Timeout 2");
         return PN532_TIMEOUT;
     }
-    if (0 != (uint8_t)(length[0] + length[1]))
-    {
+    if (0 != (uint8_t)(length[0] + length[1])) {
         DMSG("Length error");
         return PN532_INVALID_FRAME;
     }
@@ -135,12 +129,13 @@ int16_t PN532_HSU::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout) {
         return PN532_INVALID_FRAME;
     }
 
-    if (receive(buf, length[0], timeout) != length[0]) {
+    if (receive(buf+2, length[0], timeout) != length[0]) {
         DMSG("Timeout 4");
         return PN532_TIMEOUT;
     }
     uint8_t sum = PN532_PN532TOHOST + cmd;
-    for (uint8_t i = 0; i < length[0]; i++) {
+    int offset = 2;
+    for (uint8_t i = 0 + offset; i < length[0] + offset; i++) {
         sum += buf[i];
     }
 

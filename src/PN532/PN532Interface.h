@@ -25,8 +25,6 @@
                                       b = (b & 0xCC) >> 2 | (b & 0x33) << 2; \
                                       b = (b & 0xAA) >> 1 | (b & 0x55) << 1
 
-# define PRINT_DEBUG(x) Utils::Print(__FILE__); Serial.print(":"); Serial.print(__LINE__);Serial.print(" ");Serial.print(x);
-
 class PN532Interface
 {
 public:
@@ -54,7 +52,10 @@ public:
     */
     virtual int16_t readResponse(uint8_t command, uint8_t buf[], uint8_t len, uint16_t timeout = 1000) = 0;
 
-#if PROTOCOL != PROT_HSU
+#if PROTOCOL == PROT_HSU
+    virtual int16_t readResponse(uint8_t buf[], uint8_t len, uint16_t timeout = 1000) = 0;
+    virtual int8_t receive(uint8_t *buf, int len, uint16_t timeout);
+#else
     virtual uint8_t RequestFrom(uint8_t u8_Quantity);
     virtual int Read();
     virtual void BeginTransmission(uint8_t u8_Address);

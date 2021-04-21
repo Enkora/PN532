@@ -455,12 +455,8 @@ bool PN532::readPassiveTargetID(uint8_t cardbaudrate, uint8_t *uid, uint8_t *uid
     */
 
     // if no tags were found
-    if (pn532_packetbuffer[0] != 1) {
-        Serial.print("pn532_packetbuffer 1: ");
-        for (int i = 0; i < 16; i++) {
-            Serial.print(String(pn532_packetbuffer[i], HEX) + " ");
-        }
-        Serial.println("pn532_packetbuffer[0] failed");
+    if (pn532_packetbuffer[2] != 1) {
+        PRINT_DEBUG("pn532_packetbuffer[2] failed");
         return false;
     }
 
@@ -2041,8 +2037,10 @@ int PN532::DataExchangeReadFile(TxBuffer *pi_Command,               // in (comma
     if (!mpi_SessionKey->CalculateCmac(commandbuf, u8_CalcMac))
         return -1;
 
-    if (!SendCommandCheckAck(pn532_packetbuffer, P))
+    if (!SendCommandCheckAck(pn532_packetbuffer, P)) {
+        PRINT_DEBUG("SendCommandCheckAck failed");
         return -1;
+    }
 
     byte status = ReadData(pn532_packetbuffer, s32_RecvSize + s32_Overhead);
 
@@ -2251,8 +2249,10 @@ int PN532::DataExchange(TxBuffer *pi_Command,               // in (command + par
     Serial.println();
 
     // ORIGINALLY:
-    if (!SendCommandCheckAck(pn532_packetbuffer, P))
+    if (!SendCommandCheckAck(pn532_packetbuffer, P)) {
+        PRINT_DEBUG("SendCommandCheckAck failed");
         return -1;
+    }
 
     // MODIFIED:
     //if (HAL(writeCommand)(pn532_packetbuffer, P)) {
@@ -2469,8 +2469,14 @@ bool PN532::WaitReady() {
 }
 
 bool PN532::SendCommandCheckAck(byte *cmd, byte cmdlen) {
+#if PROTOCOL == PROT_HSU
+    Serial.println("\nHSU");
+    return HAL(writeCommand)(cmd, cmdlen) == 0;
+#else
+    Serial.println("\nNOT HSU");
     WriteCommand(cmd, cmdlen);
     return ReadAck();
+#endif
 }
 
 void PN532::WriteCommand(byte *cmd, byte cmdlen) {
@@ -2495,6 +2501,7 @@ void PN532::WriteCommand(byte *cmd, byte cmdlen) {
     if (mu8_DebugLevel > 1) {
         Utils::Print("Sending:  ");
         Utils::PrintHexBuf(TxBuffer, P, LF, 5, cmdlen + 6);
+        DMSG("\n");
     }
 }
 
@@ -2633,10 +2640,18 @@ byte PN532::ReadData(byte *buff, byte len) {
     param  len       Number of bytes to read
 **************************************************************************/
 bool PN532::ReadPacket(byte *buff, byte len) {
+#if PROTOCOL == PROT_HSU
+    // TODO PN532_ACK_WAIT_TIME*3 is empirically shown to work here, lowet than that times out
+    if (HAL(receive)(buff, len, PN532_ACK_WAIT_TIME*3) <= 0) {
+        PRINT_DEBUG("Timeout\n");
+        return false;
+    }
+    return true;
+#else
     if (!WaitReady())
         return false;
 #if PROTOCOL == PROT_I2C
-    {
+        {
         Utils::DelayMilli(2);
         // read (n+1 to take into account leading Ready byte)
         HAL(RequestFrom)(len + 1);
@@ -2653,7 +2668,8 @@ bool PN532::ReadPacket(byte *buff, byte len) {
         }
         return true;
     }
-#endif
+#endif // if I2C
+#endif // if HSU
 }
 
 // Checks the status byte that is returned from the card

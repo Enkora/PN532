@@ -34,8 +34,7 @@ private:
 
     inline uint8_t write(uint8_t data)
     {
-        Serial.print(data, HEX);
-        Serial.print(" ");
+        DMSG_HEX(data);
 #if ARDUINO >= 100
         return _wire->write(data);
 #else
@@ -45,10 +44,12 @@ private:
 
     inline uint8_t read() {
 #if ARDUINO >= 100
-        return _wire->read();
+        uint8_t data = _wire->read();
 #else
-        return _wire->receive();
+        uint8_t data = _wire->receive();
 #endif
+        DMSG_HEX(data);
+        return data;
     }
 };
 

@@ -6,11 +6,14 @@
 
 PN532_HSU pn532(21, 22);
 PN532 nfc(pn532);
+#define USING "HSU"
 
 #elif PROTOCOL == PROT_I2C
     #include <Wire.h>
     #include <PN532_I2C/PN532_I2C.h>
     #include <PN532/PN532.h>
+
+    #define USING "I2C"
 
     PN532_I2C pn532i2c(Wire);
     PN532 nfc(pn532i2c);
@@ -26,7 +29,7 @@ void setup(void) {
   }
 
   delay(1000);
-  Serial.println("Hello 1!");
+  Serial.println(String("Using ") + String(USING)) ;
 
   nfc.AES_DEFAULT_KEY.SetKeyData(NEW_KEY, 16, 0);
   nfc.DES2_DEFAULT_KEY.SetKeyData(NEW_KEY, 8, 0); // simple DES
@@ -37,6 +40,7 @@ void setup(void) {
       versiondata = nfc.getFirmwareVersion();
       if (versiondata) break;
       Serial.println("Didn't find PN53x board");
+      delay(10000);
   }
 
   Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX);
