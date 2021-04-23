@@ -1,7 +1,7 @@
 
 #include "PN532_HSU.h"
 #include <HardwareSerial.h>
-#include "PN532/PN532_debug.h"
+#include "PN532_debug.h"
 
 HardwareSerial MySerial(1);
 

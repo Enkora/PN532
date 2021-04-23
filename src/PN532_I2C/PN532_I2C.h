@@ -7,8 +7,8 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-#include "PN532/PN532Interface.h"
-#include "PN532/PN532_debug.h"
+#include "PN532Interface.h"
+#include "PN532_debug.h"
 
 class PN532_I2C : public PN532Interface {
 public:
