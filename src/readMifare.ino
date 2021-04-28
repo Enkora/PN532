@@ -1,10 +1,10 @@
 // Test file for BlueBox, modify pins etc for V4 board testing
 
-#include "PN532/Utils.h"
+#include "Utils.h"
 
 #if PROTOCOL == PROT_HSU
-    #include "PN532_HSU/PN532_HSU.h"
-    #include "PN532/PN532.h"
+    #include "PN532_HSU.h"
+    #include "PN532.h"
 
 PN532_HSU pn532(13, 32);
 PN532 nfc(pn532);
@@ -13,7 +13,7 @@ PN532 nfc(pn532);
 #elif PROTOCOL == PROT_I2C
     #include <Wire.h>
     #include <PN532_I2C/PN532_I2C.h>
-    #include <PN532/PN532.h>
+    #include <PN532.h>
 
     #define USING "I2C"
 
