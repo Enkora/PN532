@@ -1,10 +1,12 @@
+// Test file for BlueBox, modify pins etc for V4 board testing
+
 #include "PN532/Utils.h"
 
 #if PROTOCOL == PROT_HSU
     #include "PN532_HSU/PN532_HSU.h"
     #include "PN532/PN532.h"
 
-PN532_HSU pn532(21, 22);
+PN532_HSU pn532(13, 32);
 PN532 nfc(pn532);
 #define USING "HSU"
 
@@ -21,8 +23,16 @@ PN532 nfc(pn532);
 
 AES mi_AesSessionKey;
 
+int freq = 2000;
+int channel = 0;
+int resolution = 8;
+int piezo_pin = 33;
+
 void setup(void) {
-  Serial.begin(115200);
+    ledcSetup(channel, freq, resolution);
+    ledcAttachPin(piezo_pin, channel);
+
+    Serial.begin(115200);
   while (!Serial) {
       Serial.print(".");
       delay(500);

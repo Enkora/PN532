@@ -3594,6 +3594,11 @@ bool PN532::SAFE_TEST() {
         return false;
     }
 
+    ledcWrite(0, 100);
+    ledcWriteNote(0, NOTE_F, 5);
+    delay(500);
+    ledcWrite(0, 0);
+
     // Get a list of all applications
     uint32_t u32_IDlist[28];
     byte u8_AppCount;
@@ -3603,7 +3608,6 @@ bool PN532::SAFE_TEST() {
     }
 
     PRINT_DEBUG("GetApplicationIDs ok");
-    delay(1000);
 
     if (!SelectApplication(0xF1CC57)) {
         Serial.println("SelectApplication failed");
@@ -3611,7 +3615,6 @@ bool PN532::SAFE_TEST() {
     }
 
     PRINT_DEBUG("SelectApplication ok");
-    delay(1000);
 
     const int FILE_LENGTH = 10; // this exceeds the frame size -> requires two frames for write / read
     DESFireFilePermissions k_Permis;
@@ -3640,7 +3643,6 @@ bool PN532::SAFE_TEST() {
     }
 
     PRINT_DEBUG("GetFileIDs ok");
-    delay(1000);
 
     // Get the file settings
     DESFireFileSettings k_Settings;
@@ -3672,7 +3674,6 @@ bool PN532::SAFE_TEST() {
     }
 
     PRINT_DEBUG("Authenticate ok");
-    delay(1000);
 
     byte u8_RxData[16];
     //bool PN532::ReadFileData(byte u8_FileID, int s32_Offset, int s32_Length, byte* u8_DataBuffer)
@@ -3684,6 +3685,10 @@ bool PN532::SAFE_TEST() {
     PRINT_DEBUG("ReadFileData ok, contents: ")
     Utils::PrintHexBuf(u8_RxData, 4, LF);
     delay(1000);
+
+    ledcWrite(0, 100);
+    delay(3000);
+    ledcWrite(0, 0);
 
     byte u8_Version;
     if (!PN532::GetKeyVersion(0, &u8_Version)) {
