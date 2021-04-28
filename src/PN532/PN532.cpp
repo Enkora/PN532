@@ -2641,8 +2641,7 @@ byte PN532::ReadData(byte *buff, byte len) {
 **************************************************************************/
 bool PN532::ReadPacket(byte *buff, byte len) {
 #if PROTOCOL == PROT_HSU
-    // TODO PN532_ACK_WAIT_TIME*3 is empirically shown to work here, lowet than that times out
-    if (HAL(receive)(buff, len, PN532_ACK_WAIT_TIME*3) <= 0) {
+    if (HAL(receive)(buff, len, PN532_ACK_WAIT_TIME) <= 0) {
         PRINT_DEBUG("Timeout\n");
         return false;
     }
