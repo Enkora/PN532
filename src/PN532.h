@@ -113,6 +113,20 @@ enum DESFireStatus
     ST_FileIntegrityError    = 0xF1,
 };
 
+enum PICC_Type : byte {
+    PICC_TYPE_UNKNOWN		,
+    PICC_TYPE_ISO_14443_4	,	// PICC compliant with ISO/IEC 14443-4
+    PICC_TYPE_ISO_18092		, 	// PICC compliant with ISO/IEC 18092 (NFC)
+    PICC_TYPE_MIFARE_MINI	,	// MIFARE Classic protocol, 320 bytes
+    PICC_TYPE_MIFARE_1K		,	// MIFARE Classic protocol, 1KB
+    PICC_TYPE_MIFARE_4K		,	// MIFARE Classic protocol, 4KB
+    PICC_TYPE_MIFARE_UL		,	// MIFARE Ultralight or Ultralight C
+    PICC_TYPE_MIFARE_PLUS	,	// MIFARE Plus
+    PICC_TYPE_MIFARE_DESFIRE,	// MIFARE DESFire
+    PICC_TYPE_TNP3XXX		,	// Only mentioned in NXP AN 10833 MIFARE Type Identification Procedure
+    PICC_TYPE_NOT_COMPLETE	= 0xff	// SAK indicates UID is not complete.
+};
+
 // Card information about software and hardware version.
 struct DESFireCardVersion
 {
