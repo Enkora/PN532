@@ -3684,10 +3684,9 @@ bool PN532::SAFE_TEST() {
 
     PRINT_DEBUG("ReadFileData ok, contents: ")
     Utils::PrintHexBuf(u8_RxData, 4, LF);
-    delay(1000);
 
     ledcWrite(0, 100);
-    delay(3000);
+    delay(2000);
     ledcWrite(0, 0);
 
     byte u8_Version;
@@ -3697,7 +3696,6 @@ bool PN532::SAFE_TEST() {
     }
 
     PRINT_DEBUG("GetKeyVersion ok");
-    delay(1000);
 
     if (u8_Version != 0) {
         Utils::Print("The selftest requires an empty Desfire card (factory default DES key)\r\n");
@@ -3712,7 +3710,6 @@ bool PN532::SAFE_TEST() {
     }
 
     PRINT_DEBUG("GetCardVersion ok");
-    delay(1000);
 
     // Print the free memory on the card
     uint32_t u32_FreeMem;
@@ -3722,7 +3719,6 @@ bool PN532::SAFE_TEST() {
     }
 
     PRINT_DEBUG("GetFreeMemory ok");
-    delay(1000);
 
     // Get the key settings, key count and key type of the application
     DESFireKeySettings e_Settg;
@@ -3737,7 +3733,7 @@ bool PN532::SAFE_TEST() {
     }
 
     PRINT_DEBUG("GetKeySettings ok, restarting test in 10 secs");
-    delay(10000);
+    delay(2000);
 
     // ----------------------------------------------------------------------
 
