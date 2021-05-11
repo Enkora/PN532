@@ -3614,6 +3614,15 @@ bool PN532::SAFE_TEST() {
         return false;
     }
 
+    ledcWrite(0, 100);
+    delay(200);
+    ledcWrite(0, 0);
+    delay(200);
+    ledcWrite(0, 100);
+    delay(200);
+    ledcWrite(0, 0);
+    delay(500);
+
     PRINT_DEBUG("SelectApplication ok");
 
     const int FILE_LENGTH = 10; // this exceeds the frame size -> requires two frames for write / read
@@ -3643,6 +3652,19 @@ bool PN532::SAFE_TEST() {
     }
 
     PRINT_DEBUG("GetFileIDs ok");
+
+    ledcWrite(0, 100);
+    delay(200);
+    ledcWrite(0, 0);
+    delay(200);
+    ledcWrite(0, 100);
+    delay(200);
+    ledcWrite(0, 0);
+    delay(200);
+    ledcWrite(0, 100);
+    delay(200);
+    ledcWrite(0, 0);
+    delay(500);
 
     // Get the file settings
     DESFireFileSettings k_Settings;

@@ -2,11 +2,23 @@
 
 #include "Utils.h"
 
+#define BOARD_V4 1
+#define BOARD_BLUEBOX 2
+#define BOARD BOARD_BLUEBOX
+
 #if PROTOCOL == PROT_HSU
     #include "PN532_HSU.h"
     #include "PN532.h"
 
-PN532_HSU pn532(13, 32);
+#if BOARD == BOARD_V4
+    PN532_HSU pn532(13, 14);
+    int piezo_pin = 12;
+#else
+    PN532_HSU pn532(13, 32);
+    int piezo_pin = 33;
+#endif
+
+
 PN532 nfc(pn532);
 #define USING "HSU"
 
@@ -26,7 +38,6 @@ AES mi_AesSessionKey;
 int freq = 2000;
 int channel = 0;
 int resolution = 8;
-int piezo_pin = 33;
 
 void setup(void) {
     ledcSetup(channel, freq, resolution);
@@ -43,6 +54,12 @@ void setup(void) {
 
   nfc.AES_DEFAULT_KEY.SetKeyData(NEW_KEY, 16, 0);
   nfc.DES2_DEFAULT_KEY.SetKeyData(NEW_KEY, 8, 0); // simple DES
+
+#if BOARD == BOARD_V4
+    digitalWrite(33, HIGH);
+    delay(100);
+    digitalWrite(33, LOW);
+#endif
 
   nfc.begin();
   uint32_t versiondata = 0;
